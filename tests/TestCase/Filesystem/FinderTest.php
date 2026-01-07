@@ -232,6 +232,24 @@ class FinderTest extends TestCase
         $this->assertContains('.htaccess', $paths);
     }
 
+    public function testIgnoreHiddenFilesByDefault(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/webroot'))
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getFilename();
+        }
+
+        // Hidden files should be ignored by default
+        $this->assertNotContains('.htaccess', $paths);
+        $this->assertContains('index.php', $paths);
+        $this->assertContains('style.css', $paths);
+    }
+
     public function testChaining(): void
     {
         $finder = new Finder();
