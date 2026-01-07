@@ -150,7 +150,7 @@ class FilesystemTest extends TestCase
         ];
         vfsStream::create($structure);
 
-        $iterator = $this->fs->createRecursiveIterator($this->vfsPath, skipHiddenDirs: true);
+        $iterator = $this->fs->createRecursiveIterator($this->vfsPath, includeHiddenDirs: false);
 
         $files = [];
         foreach ($iterator as $file) {
@@ -262,7 +262,7 @@ class FilesystemTest extends TestCase
         ];
         vfsStream::create($structure);
 
-        $iterator = $this->fs->createRecursiveIterator($this->vfsPath, skipHiddenDirs: false);
+        $iterator = $this->fs->createRecursiveIterator($this->vfsPath, includeHiddenDirs: true);
 
         $files = [];
         foreach ($iterator as $file) {
