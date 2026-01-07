@@ -708,4 +708,127 @@ class FinderTest extends TestCase
         $this->assertNotContains('UsersTable.php', $filenames);
         $this->assertCount(2, $filenames);
     }
+
+    public function testRecursiveFalse(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->recursive(false)
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        // Should only find files at top level of src/
+        // src/ directory itself has no files, only subdirectories
+        $this->assertCount(0, $filenames);
+    }
+
+    public function testNonRecursiveWithFiles(): void
+    {
+        // Create structure with files at top level
+        vfsStream::setup('test', null, [
+            'top.php' => '<?php',
+            'another.php' => '<?php',
+            'subdir' => [
+                'deep.php' => '<?php',
+            ],
+        ]);
+
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('test'))
+            ->recursive(false)
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        $this->assertCount(2, $filenames);
+        $this->assertContains('top.php', $filenames);
+        $this->assertContains('another.php', $filenames);
+        $this->assertNotContains('deep.php', $filenames);
+    }
+
+    public function testNonRecursiveWithNameFilter(): void
+    {
+        vfsStream::setup('test', null, [
+            'match.php' => '<?php',
+            'ignore.txt' => 'text',
+            'another.php' => '<?php',
+        ]);
+
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('test'))
+            ->recursive(false)
+            ->name('*.php')
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        $this->assertCount(2, $filenames);
+        $this->assertContains('match.php', $filenames);
+        $this->assertContains('another.php', $filenames);
+        $this->assertNotContains('ignore.txt', $filenames);
+    }
+
+    public function testNonRecursiveIgnoresHiddenFiles(): void
+    {
+        vfsStream::setup('test', null, [
+            'visible.txt' => 'content',
+            '.hidden' => 'hidden content',
+        ]);
+
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('test'))
+            ->recursive(false)
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        $this->assertCount(1, $filenames);
+        $this->assertContains('visible.txt', $filenames);
+        $this->assertNotContains('.hidden', $filenames);
+    }
+
+    public function testNonRecursiveMultipleDirectories(): void
+    {
+        vfsStream::setup('test', null, [
+            'dir1' => [
+                'a.txt' => 'content',
+            ],
+            'dir2' => [
+                'b.txt' => 'content',
+            ],
+        ]);
+
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('test/dir1'))
+            ->in(vfsStream::url('test/dir2'))
+            ->recursive(false)
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        $this->assertCount(2, $filenames);
+        $this->assertContains('a.txt', $filenames);
+        $this->assertContains('b.txt', $filenames);
+    }
 }
