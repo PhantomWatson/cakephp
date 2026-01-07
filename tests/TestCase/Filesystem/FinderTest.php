@@ -831,4 +831,47 @@ class FinderTest extends TestCase
         $this->assertContains('a.txt', $filenames);
         $this->assertContains('b.txt', $filenames);
     }
+
+    public function testExcludeNestedDirectory(): void
+    {
+        // Create structure with nested directories to verify early pruning
+        $structure = [
+            'project' => [
+                'src' => [
+                    'file1.php' => '<?php',
+                    'vendor' => [
+                        'package1' => [
+                            'file2.php' => '<?php',
+                            'src' => [
+                                'deep.php' => '<?php',
+                            ],
+                        ],
+                        'package2' => [
+                            'file3.php' => '<?php',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $root = vfsStream::setup('exclude_test', null, $structure);
+
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('exclude_test/project'))
+            ->exclude('vendor')
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getPathname();
+        }
+
+        // Should only find file1.php, not anything in vendor/
+        $this->assertCount(1, $paths);
+        $this->assertStringContainsString('file1.php', $paths[0]);
+        $this->assertStringNotContainsString('vendor', implode(',', $paths));
+        $this->assertStringNotContainsString('file2.php', implode(',', $paths));
+        $this->assertStringNotContainsString('file3.php', implode(',', $paths));
+        $this->assertStringNotContainsString('deep.php', implode(',', $paths));
+    }
 }
