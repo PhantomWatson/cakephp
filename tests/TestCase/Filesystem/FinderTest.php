@@ -156,7 +156,7 @@ class FinderTest extends TestCase
         $finder = new Finder();
         $files = $finder
             ->in(vfsStream::url('root/src'))
-            ->depth('== 0')
+            ->depth(0)
             ->files();
 
         $count = 0;
@@ -170,7 +170,7 @@ class FinderTest extends TestCase
         $finder = new Finder();
         $files = $finder
             ->in(vfsStream::url('root/src'))
-            ->depth('== 1')
+            ->depth(1)
             ->files();
 
         $paths = [];
@@ -257,7 +257,7 @@ class FinderTest extends TestCase
             ->in(vfsStream::url('root/src'))
             ->name('*.php')
             ->exclude('View')
-            ->depth('< 3');
+            ->depth(3, '<');
 
         $this->assertInstanceOf(Finder::class, $result);
     }
@@ -480,7 +480,7 @@ class FinderTest extends TestCase
         $files = $finder
             ->in(vfsStream::url('root/src'))
             ->pattern('**/*.php')
-            ->depth('== 1')
+            ->depth(1)
             ->files();
 
         $filenames = [];
@@ -611,7 +611,7 @@ class FinderTest extends TestCase
         $finder = new Finder();
         $files = $finder
             ->in(vfsStream::url('root/webroot'))
-            ->depth('== 0')
+            ->depth(0)
             ->files();
 
         $filenames = [];
