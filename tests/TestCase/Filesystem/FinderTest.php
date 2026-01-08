@@ -16,6 +16,7 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Filesystem;
 
+use Cake\Filesystem\Enum\DepthOperator;
 use Cake\Filesystem\Finder;
 use Cake\TestSuite\TestCase;
 use Iterator;
@@ -156,7 +157,7 @@ class FinderTest extends TestCase
         $finder = new Finder();
         $files = $finder
             ->in(vfsStream::url('root/src'))
-            ->depth(0)
+            ->depth(3, DepthOperator::LESS_THAN)
             ->files();
 
         $count = 0;
@@ -164,8 +165,8 @@ class FinderTest extends TestCase
             $count++;
         }
 
-        // No files at depth 0 in src directory
-        $this->assertEquals(0, $count);
+        // Should find files at depth 0, 1, and 2
+        $this->assertEquals(5, $count);
 
         $finder = new Finder();
         $files = $finder
@@ -257,7 +258,7 @@ class FinderTest extends TestCase
             ->in(vfsStream::url('root/src'))
             ->name('*.php')
             ->exclude('View')
-            ->depth(3, '<');
+            ->depth(3, DepthOperator::LESS_THAN);
 
         $this->assertInstanceOf(Finder::class, $result);
     }
@@ -873,5 +874,114 @@ class FinderTest extends TestCase
         $this->assertStringNotContainsString('file2.php', implode(',', $paths));
         $this->assertStringNotContainsString('file3.php', implode(',', $paths));
         $this->assertStringNotContainsString('deep.php', implode(',', $paths));
+    }
+
+    public function testDirectories(): void
+    {
+        $finder = new Finder();
+        $directories = $finder->in(vfsStream::url('root/src'))->directories();
+
+        $this->assertInstanceOf(Iterator::class, $directories);
+
+        $paths = [];
+        foreach ($directories as $dir) {
+            $paths[] = $dir->getFilename();
+        }
+
+        // Should find: Controller, Model, View, Entity, Table (all directories)
+        $this->assertContains('Controller', $paths);
+        $this->assertContains('Model', $paths);
+        $this->assertContains('View', $paths);
+        $this->assertContains('Entity', $paths);
+        $this->assertContains('Table', $paths);
+
+        // Should not contain any files
+        $this->assertNotContains('AppController.php', $paths);
+        $this->assertNotContains('User.php', $paths);
+    }
+
+    public function testDirectoriesNonRecursive(): void
+    {
+        $finder = new Finder();
+        $directories = $finder
+            ->in(vfsStream::url('root/src'))
+            ->recursive(false)
+            ->directories();
+
+        $paths = [];
+        foreach ($directories as $dir) {
+            $paths[] = $dir->getFilename();
+        }
+
+        // Should only find top-level directories: Controller, Model, View
+        $this->assertCount(3, $paths);
+        $this->assertContains('Controller', $paths);
+        $this->assertContains('Model', $paths);
+        $this->assertContains('View', $paths);
+
+        // Should not find nested directories
+        $this->assertNotContains('Entity', $paths);
+        $this->assertNotContains('Table', $paths);
+    }
+
+    public function testDirectoriesWithExclude(): void
+    {
+        $finder = new Finder();
+        $directories = $finder
+            ->in(vfsStream::url('root/src'))
+            ->exclude('Model')
+            ->directories();
+
+        $paths = [];
+        foreach ($directories as $dir) {
+            $paths[] = $dir->getFilename();
+        }
+
+        $this->assertContains('Controller', $paths);
+        $this->assertContains('View', $paths);
+
+        // Model and its subdirectories should be excluded
+        $this->assertNotContains('Model', $paths);
+        $this->assertNotContains('Entity', $paths);
+        $this->assertNotContains('Table', $paths);
+    }
+
+    public function testDirectoriesWithDepth(): void
+    {
+        $finder = new Finder();
+        $directories = $finder
+            ->in(vfsStream::url('root/src'))
+            ->depth(0)
+            ->directories();
+
+        $paths = [];
+        foreach ($directories as $dir) {
+            $paths[] = $dir->getFilename();
+        }
+
+        // Only top-level directories
+        $this->assertCount(3, $paths);
+        $this->assertContains('Controller', $paths);
+        $this->assertContains('Model', $paths);
+        $this->assertContains('View', $paths);
+    }
+
+    public function testDirectoriesWithNamePattern(): void
+    {
+        $finder = new Finder();
+        $directories = $finder
+            ->in(vfsStream::url('root/tests'))
+            ->name('*Case')
+            ->recursive(false)
+            ->directories();
+
+        $paths = [];
+        foreach ($directories as $dir) {
+            $paths[] = $dir->getFilename();
+        }
+
+        // Should match TestCase directory under tests/
+        $this->assertCount(1, $paths);
+        $this->assertContains('TestCase', $paths);
     }
 }
