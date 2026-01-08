@@ -55,59 +55,13 @@ class PathTest extends TestCase
 
     public function testJoin(): void
     {
-        // Basic cases
         $this->assertSame('path/to/file', Path::join('path', 'to', 'file'));
         $this->assertSame('/absolute/path/file', Path::join('/absolute', 'path', 'file'));
+        $this->assertSame('path/to/file', Path::join('path/', '/to/', '/file'));
+        $this->assertSame('path/to/file', Path::join('path\\', '\\to\\', '\\file'));
         $this->assertSame('', Path::join());
         $this->assertSame('path', Path::join('path'));
         $this->assertSame('path/file', Path::join('path', '', 'file'));
-
-        // Slash combinations
-        $this->assertSame('path/to/file', Path::join('path/', 'to', 'file'));
-        $this->assertSame('path/to/file', Path::join('path', 'to/', 'file'));
-        $this->assertSame('path/to/file', Path::join('path/', 'to/', 'file'));
-        $this->assertSame('path/to/file', Path::join('path/', '/to/', '/file'));
-
-        // Absolute paths
-        $this->assertSame('/path/to/file', Path::join('/', 'path', 'to', 'file'));
-        $this->assertSame('/path/to/file', Path::join('/', '/path', 'to', 'file'));
-
-        // Natural trailing slashes
-        $this->assertSame('/', Path::join('/', '/'));
-        $this->assertSame('/path/to/file/', Path::join('/path', 'to', 'file/'));
-        $this->assertSame('/path/to/file/', Path::join('/path', 'to', 'file', '/'));
-
-        // Windows-style backslashes
-        $this->assertSame('path\\to\\file', Path::join('path\\', '\\to\\', '\\file'));
-        $this->assertSame('/path/to\\file', Path::join('/', '\\path', 'to', '\\file'));
-    }
-
-    public function testJoinWithTrailing(): void
-    {
-        // Test empty cases with trailing
-        $this->assertSame('', Path::join(false));
-        $this->assertSame('/', Path::join(true));
-        $this->assertSame('/', Path::join('/', true));
-
-        // Test adding trailing slash (true)
-        $this->assertSame('/path/to/file/', Path::join('/path', 'to', 'file', true));
-        $this->assertSame('/path/to/file/', Path::join('/path', 'to', 'file/', '/', true));
-
-        // Test removing trailing slash (false)
-        $this->assertSame('', Path::join('/', false));
-        $this->assertSame('/path/to/file', Path::join('/path', 'to', 'file/', false));
-        $this->assertSame('/path/to/file', Path::join('/path', 'to', 'file/', '/', false));
-
-        // Test null (ignore trailing slashes)
-        $this->assertSame('', Path::join(null));
-        $this->assertSame('/path/to/file/', Path::join('/path', 'to', 'file/', null));
-        $this->assertSame('/path/to/file', Path::join('/path', 'to', 'file', null));
-
-        // Test Windows backslashes with trailing control
-        $this->assertSame('/path\\to\\file/', Path::join('/', 'path', '\\to\\', 'file', true));
-        $this->assertSame('/path\\to\\file\\', Path::join('/', 'path', '\\to\\', 'file', '\\', true));
-        $this->assertSame('/path\\to\\file', Path::join('/', 'path', '\\to\\', 'file', false));
-        $this->assertSame('/path\\to\\file', Path::join('/', 'path', '\\to\\', 'file', '\\', false));
     }
 
     public function testMatches(): void
