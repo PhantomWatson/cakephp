@@ -985,4 +985,296 @@ class FinderTest extends TestCase
         $this->assertCount(1, $paths);
         $this->assertContains('TestCase', $paths);
     }
+
+    public function testAllMode(): void
+    {
+        $finder = new Finder();
+        $items = $finder
+            ->in(vfsStream::url('root/src'))
+            ->depth(0)
+            ->all();
+
+        $files = [];
+        $directories = [];
+        foreach ($items as $item) {
+            if ($item->isDir()) {
+                $directories[] = $item->getFilename();
+            } else {
+                $files[] = $item->getFilename();
+            }
+        }
+
+        // Should find both files and directories at depth 0
+        $this->assertGreaterThan(0, $files);
+        $this->assertGreaterThan(0, $directories);
+        $this->assertContains('Controller', $directories);
+        $this->assertContains('Model', $directories);
+        $this->assertContains('View', $directories);
+    }
+
+    public function testAllModeRecursive(): void
+    {
+        $finder = new Finder();
+        $items = $finder
+            ->in(vfsStream::url('root/src/Model'))
+            ->all();
+
+        $files = [];
+        $directories = [];
+        foreach ($items as $item) {
+            if ($item->isDir()) {
+                $directories[] = $item->getFilename();
+            } else {
+                $files[] = $item->getFilename();
+            }
+        }
+
+        // Should find both Entity and Table directories
+        $this->assertContains('Entity', $directories);
+        $this->assertContains('Table', $directories);
+        // And their files
+        $this->assertContains('User.php', $files);
+        $this->assertContains('UsersTable.php', $files);
+    }
+
+    public function testRegexPathPattern(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root'))
+            ->path('/Controller/')
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getPathname();
+        }
+
+        // Should match files with 'Controller' in path using regex
+        $this->assertGreaterThan(0, $paths);
+        $this->assertStringContainsString('Controller', implode(',', $paths));
+        $this->assertStringContainsString('UsersController.php', implode(',', $paths));
+    }
+
+    public function testRegexPathPatternWithDelimiters(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->path('#Model/(Entity|Table)#')
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getPathname();
+        }
+
+        // Should match files in Model/Entity or Model/Table
+        $this->assertCount(2, $paths);
+        $this->assertStringContainsString('User.php', implode(',', $paths));
+        $this->assertStringContainsString('UsersTable.php', implode(',', $paths));
+    }
+
+    public function testMultipleNamePatterns(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/webroot'))
+            ->name('*.css')
+            ->name('*.js')
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getFilename();
+        }
+
+        // Should match both CSS and JS files
+        $this->assertCount(2, $paths);
+        $this->assertContains('style.css', $paths);
+        $this->assertContains('app.js', $paths);
+    }
+
+    public function testDepthNotEqual(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->depth(0, DepthOperator::NOT_EQUAL)
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getPathname();
+        }
+
+        // Should exclude depth 0 files, only get nested files
+        $this->assertGreaterThan(0, $paths);
+        // All paths should have at least one subdirectory
+        foreach ($paths as $path) {
+            $relativePath = str_replace(vfsStream::url('root/src') . '/', '', $path);
+            $this->assertStringContainsString('/', $relativePath);
+        }
+    }
+
+    public function testDepthGreaterThan(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->depth(0, DepthOperator::GREATER_THAN)
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getPathname();
+        }
+
+        // Should only get files deeper than depth 0
+        $this->assertGreaterThan(0, $paths);
+        foreach ($paths as $path) {
+            $relativePath = str_replace(vfsStream::url('root/src') . '/', '', $path);
+            $this->assertStringContainsString('/', $relativePath);
+        }
+    }
+
+    public function testDepthLessThanOrEqual(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->depth(1, DepthOperator::LESS_THAN_OR_EQUAL)
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getFilename();
+        }
+
+        // Should get files at depth 0 and 1
+        $this->assertGreaterThan(0, $paths);
+        // Should include layout.php (depth 1: src/View/layout.php)
+        $this->assertContains('layout.php', $paths);
+        // Should NOT include User.php (depth 2: src/Model/Entity/User.php)
+        $this->assertNotContains('User.php', $paths);
+    }
+
+    public function testDepthGreaterThanOrEqual(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->depth(1, DepthOperator::GREATER_THAN_OR_EQUAL)
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getFilename();
+        }
+
+        // Should get files at depth 1 and deeper
+        $this->assertGreaterThan(0, $paths);
+        // Should include both depth 1 and depth 2 files
+        $this->assertContains('layout.php', $paths); // depth 1
+        $this->assertContains('User.php', $paths); // depth 2
+    }
+
+    public function testDepthRangeQuery(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->depth(0, DepthOperator::GREATER_THAN) // Greater than 0
+            ->depth(2, DepthOperator::LESS_THAN) // Less than 2
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getFilename();
+        }
+
+        // Should only get files at depth 1 (between 0 and 2)
+        $this->assertGreaterThan(0, $paths);
+        $this->assertContains('layout.php', $paths); // depth 1
+        $this->assertContains('AppController.php', $paths); // depth 1
+        $this->assertNotContains('User.php', $paths); // depth 2
+    }
+
+    public function testIgnoreHiddenFilesFalse(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/webroot'))
+            ->ignoreHiddenFiles(false)
+            ->recursive(false)
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getFilename();
+        }
+
+        // Should include .htaccess file
+        $this->assertContains('.htaccess', $paths);
+        $this->assertContains('index.php', $paths);
+    }
+
+    public function testEmptyDirectory(): void
+    {
+        // Create an empty directory
+        vfsStream::create(['empty' => []], $this->root);
+
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/empty'))
+            ->files();
+
+        $count = 0;
+        foreach ($files as $file) {
+            $count++;
+        }
+
+        // Should return no files
+        $this->assertSame(0, $count);
+    }
+
+    public function testConflictingNameFilters(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->name('*Controller.php')
+            ->notName('*Controller.php')
+            ->files();
+
+        $count = 0;
+        foreach ($files as $file) {
+            $count++;
+        }
+
+        // Should return no files due to conflicting filters
+        $this->assertSame(0, $count);
+    }
+
+    public function testMultiplePathPatternsOr(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->path('Controller')
+            ->path('Entity')
+            ->files();
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->getPathname();
+        }
+
+        // Should match files with either Controller OR Entity in path
+        $this->assertGreaterThan(0, $paths);
+        $this->assertStringContainsString('Controller', implode(',', $paths));
+        $this->assertStringContainsString('Entity', implode(',', $paths));
+        $this->assertStringContainsString('User.php', implode(',', $paths));
+        $this->assertStringContainsString('UsersController.php', implode(',', $paths));
+    }
 }

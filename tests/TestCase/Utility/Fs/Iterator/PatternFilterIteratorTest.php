@@ -220,6 +220,85 @@ class PatternFilterIteratorTest extends TestCase
     }
 
     /**
+     * Test DepthFilterIterator with NOT_EQUAL operator
+     */
+    public function testDepthFilterNotEqual(): void
+    {
+        $iterator = new RecursiveDirectoryIterator(
+            $this->root->url(),
+            RecursiveDirectoryIterator::SKIP_DOTS,
+        );
+        $recursiveIterator = new RecursiveIteratorIterator($iterator);
+        $filtered = new DepthFilterIterator($recursiveIterator, DepthOperator::NOT_EQUAL, 0);
+
+        $files = [];
+        foreach ($filtered as $file) {
+            if ($file->isFile()) {
+                $files[] = $file->getFilename();
+            }
+        }
+
+        // All files except depth 0 (excludes README.md and composer.json, only 8 files at depth 2)
+        $this->assertCount(8, $files);
+        $this->assertContains('AppController.php', $files);
+        $this->assertContains('UserTest.php', $files);
+        $this->assertNotContains('README.md', $files);
+        $this->assertNotContains('composer.json', $files);
+    }
+
+    /**
+     * Test DepthFilterIterator with LESS_THAN operator
+     */
+    public function testDepthFilterLessThan(): void
+    {
+        $iterator = new RecursiveDirectoryIterator(
+            $this->root->url(),
+            RecursiveDirectoryIterator::SKIP_DOTS,
+        );
+        $recursiveIterator = new RecursiveIteratorIterator($iterator);
+        $filtered = new DepthFilterIterator($recursiveIterator, DepthOperator::LESS_THAN, 1);
+
+        $files = [];
+        foreach ($filtered as $file) {
+            if ($file->isFile()) {
+                $files[] = $file->getFilename();
+            }
+        }
+
+        // Only files at depth < 1 (depth 0)
+        $this->assertCount(2, $files);
+        $this->assertContains('README.md', $files);
+        $this->assertContains('composer.json', $files);
+    }
+
+    /**
+     * Test DepthFilterIterator with GREATER_THAN_OR_EQUAL operator
+     */
+    public function testDepthFilterGreaterThanOrEqual(): void
+    {
+        $iterator = new RecursiveDirectoryIterator(
+            $this->root->url(),
+            RecursiveDirectoryIterator::SKIP_DOTS,
+        );
+        $recursiveIterator = new RecursiveIteratorIterator($iterator);
+        $filtered = new DepthFilterIterator($recursiveIterator, DepthOperator::GREATER_THAN_OR_EQUAL, 2);
+
+        $files = [];
+        foreach ($filtered as $file) {
+            if ($file->isFile()) {
+                $files[] = $file->getFilename();
+            }
+        }
+
+        // Files at depth >= 2 (inside Controller, Model, View, TestCase directories)
+        $this->assertCount(8, $files);
+        $this->assertContains('AppController.php', $files);
+        $this->assertContains('UsersController.php', $files);
+        $this->assertContains('User.php', $files);
+        $this->assertContains('Post.php', $files);
+    }
+
+    /**
      * Test NotFilenameFilterIterator with single pattern
      */
     public function testNotFilenameFilterSinglePattern(): void
