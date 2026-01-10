@@ -14,11 +14,11 @@ declare(strict_types=1);
  * @since         5.3.0
  * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
-namespace Cake\Filesystem;
+namespace Cake\Utility\Fs;
 
-use Cake\Filesystem\Enum\DepthOperator;
-use Cake\Filesystem\Enum\FinderMode;
 use Cake\Utility\Filesystem as FilesystemUtil;
+use Cake\Utility\Fs\Enum\DepthOperator;
+use Cake\Utility\Fs\Enum\FinderMode;
 use Closure;
 use Generator;
 use Iterator;

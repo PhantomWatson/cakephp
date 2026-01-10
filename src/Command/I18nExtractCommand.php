@@ -24,7 +24,7 @@ use Cake\Core\App;
 use Cake\Core\Configure;
 use Cake\Core\Exception\CakeException;
 use Cake\Core\Plugin;
-use Cake\Filesystem\Finder;
+use Cake\Utility\Fs\Finder;
 use Cake\Utility\Filesystem;
 use Cake\Utility\Inflector;
 

@@ -14,10 +14,10 @@ declare(strict_types=1);
  * @since         5.3.0
  * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
-namespace Cake\Test\TestCase\Filesystem;
+namespace Cake\Test\TestCase\Utility\Fs;
 
-use Cake\Filesystem\Path;
 use Cake\TestSuite\TestCase;
+use Cake\Utility\Fs\Path;
 
 /**
  * Path test case

@@ -14,11 +14,11 @@ declare(strict_types=1);
  * @since         5.3.0
  * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
-namespace Cake\Test\TestCase\Filesystem;
+namespace Cake\Test\TestCase\Utility\Fs;
 
-use Cake\Filesystem\Enum\DepthOperator;
-use Cake\Filesystem\Finder;
 use Cake\TestSuite\TestCase;
+use Cake\Utility\Fs\Enum\DepthOperator;
+use Cake\Utility\Fs\Finder;
 use Iterator;
 use org\bovigo\vfs\vfsStream;
 
@@ -854,7 +854,8 @@ class FinderTest extends TestCase
                 ],
             ],
         ];
-        $root = vfsStream::setup('exclude_test', null, $structure);
+
+        vfsStream::setup('exclude_test', null, $structure);
 
         $finder = new Finder();
         $files = $finder
