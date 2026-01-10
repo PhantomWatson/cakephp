@@ -11,13 +11,14 @@ declare(strict_types=1);
  *
  * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
  * @link          https://cakephp.org CakePHP(tm) Project
- * @since         5.3.0
+ * @since         5.4.0
  * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
 namespace Cake\Test\TestCase\Utility\Fs\Iterator;
 
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Fs\Enum\FinderMode;
+use Cake\Utility\Fs\Iterator\CallbackFilterIterator;
 use Cake\Utility\Fs\Iterator\ExcludeDirectoryFilterIterator;
 use Cake\Utility\Fs\Iterator\FileTypeFilterIterator;
 use Cake\Utility\Fs\Iterator\HiddenFileFilterIterator;
@@ -25,6 +26,7 @@ use FilesystemIterator;
 use org\bovigo\vfs\vfsStream;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use SplFileInfo;
 
 /**
  * FilterIteratorTest class
@@ -209,5 +211,31 @@ class FilterIteratorTest extends TestCase
         $this->assertNotContains('.hidden', $files); // hidden
         $this->assertNotContains('config', $files); // in .git (hidden)
         $this->assertNotContains('package.php', $files); // in vendor (excluded)
+    }
+
+    /**
+     * Test CallbackFilterIterator basic filtering
+     */
+    public function testCallbackFilterIterator(): void
+    {
+        $iterator = new RecursiveDirectoryIterator(
+            $this->root->url(),
+            RecursiveDirectoryIterator::SKIP_DOTS,
+        );
+        $recursiveIterator = new RecursiveIteratorIterator($iterator);
+        $filtered = new CallbackFilterIterator(
+            $recursiveIterator,
+            fn(SplFileInfo $file) => str_ends_with($file->getFilename(), '.php'),
+            $this->root->url(),
+        );
+
+        $files = [];
+        foreach ($filtered as $file) {
+            $files[] = $file->getFilename();
+        }
+
+        $this->assertContains('file.php', $files);
+        $this->assertContains('Controller.php', $files);
+        $this->assertNotContains('visible.txt', $files);
     }
 }

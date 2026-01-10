@@ -11,7 +11,7 @@ declare(strict_types=1);
  *
  * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
  * @link          https://cakephp.org CakePHP(tm) Project
- * @since         5.3.0
+ * @since         5.4.0
  * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
 namespace Cake\Test\TestCase\Utility\Fs;
@@ -21,6 +21,7 @@ use Cake\Utility\Fs\Enum\DepthOperator;
 use Cake\Utility\Fs\Finder;
 use Iterator;
 use org\bovigo\vfs\vfsStream;
+use SplFileInfo;
 
 /**
  * FinderTest class
@@ -1276,5 +1277,118 @@ class FinderTest extends TestCase
         $this->assertStringContainsString('Entity', implode(',', $paths));
         $this->assertStringContainsString('User.php', implode(',', $paths));
         $this->assertStringContainsString('UsersController.php', implode(',', $paths));
+    }
+
+    /**
+     * Test filter() with single callback
+     */
+    public function testFilterSingleCallback(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->filter(function (SplFileInfo $file) {
+                // Only files with "Controller" in name
+                return str_contains($file->getFilename(), 'Controller');
+            })
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        $this->assertCount(2, $filenames);
+        $this->assertContains('AppController.php', $filenames);
+        $this->assertContains('UsersController.php', $filenames);
+    }
+
+    /**
+     * Test filter() with multiple chained callbacks (AND logic)
+     */
+    public function testFilterMultipleCallbacks(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->filter(fn(SplFileInfo $file) => str_contains($file->getFilename(), 'User'))
+            ->filter(fn(SplFileInfo $file) => !str_contains($file->getFilename(), 'Table'))
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        // Should find User.php and UsersController.php, but not UsersTable.php
+        $this->assertCount(2, $filenames);
+        $this->assertContains('User.php', $filenames);
+        $this->assertContains('UsersController.php', $filenames);
+        $this->assertNotContains('UsersTable.php', $filenames);
+    }
+
+    /**
+     * Test filter() with relative path parameter
+     */
+    public function testFilterWithRelativePath(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root'))
+            ->filter(function (SplFileInfo $file, string $relativePath) {
+                // Only files in src directory
+                return str_starts_with($relativePath, 'src');
+            })
+            ->files();
+
+        $count = 0;
+        foreach ($files as $file) {
+            $count++;
+            $this->assertStringContainsString('src', $file->getPathname());
+        }
+
+        $this->assertGreaterThan(0, $count);
+    }
+
+    /**
+     * Test filter() combined with other filters
+     */
+    public function testFilterWithOtherFilters(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->name('*Controller.php')
+            ->filter(fn(SplFileInfo $file) => strlen($file->getFilename()) > 18)
+            ->files();
+
+        $filenames = [];
+        foreach ($files as $file) {
+            $filenames[] = $file->getFilename();
+        }
+
+        // UsersController.php (20 chars) is >18, AppController.php (17 chars) is not
+        $this->assertCount(1, $filenames);
+        $this->assertContains('UsersController.php', $filenames);
+        $this->assertNotContains('AppController.php', $filenames);
+    }
+
+    /**
+     * Test filter() returning empty results
+     */
+    public function testFilterNoMatches(): void
+    {
+        $finder = new Finder();
+        $files = $finder
+            ->in(vfsStream::url('root/src'))
+            ->filter(fn(SplFileInfo $file) => str_contains($file->getFilename(), 'NonExistent'))
+            ->files();
+
+        $count = 0;
+        foreach ($files as $file) {
+            $count++;
+        }
+
+        $this->assertSame(0, $count);
     }
 }
