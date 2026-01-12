@@ -22,9 +22,6 @@ use Cake\Utility\Fs\Iterator\ContainsPathFilterIterator;
 use Cake\Utility\Fs\Iterator\DepthFilterIterator;
 use Cake\Utility\Fs\Iterator\FilenameFilterIterator;
 use Cake\Utility\Fs\Iterator\GlobFilterIterator;
-use Cake\Utility\Fs\Iterator\MultiplePcreFilterIterator;
-use Cake\Utility\Fs\Iterator\NotContainsPathFilterIterator;
-use Cake\Utility\Fs\Iterator\NotFilenameFilterIterator;
 use org\bovigo\vfs\vfsStream;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -118,22 +115,22 @@ class PatternFilterIteratorTest extends TestCase
     }
 
     /**
-     * Test PathFilterIterator with include mode
+     * Test ContainsPathFilterIterator with regex patterns
      */
-    public function testMultiplePcreFilter(): void
+    public function testContainsPathFilterRegex(): void
     {
         $iterator = new RecursiveDirectoryIterator(
             $this->root->url(),
             RecursiveDirectoryIterator::SKIP_DOTS,
         );
-        $recursiveIterator = new RecursiveIteratorIterator($iterator);
-        $filtered = new MultiplePcreFilterIterator($recursiveIterator, [
+        $filtered = new ContainsPathFilterIterator($iterator, [
             '/Controller\.php$/',
             '/Test\.php$/',
         ]);
+        $recursiveIterator = new RecursiveIteratorIterator($filtered);
 
         $files = [];
-        foreach ($filtered as $file) {
+        foreach ($recursiveIterator as $file) {
             $files[] = $file->getFilename();
         }
 
@@ -299,16 +296,16 @@ class PatternFilterIteratorTest extends TestCase
     }
 
     /**
-     * Test NotFilenameFilterIterator with single pattern
+     * Test FilenameFilterIterator with negate parameter (single pattern)
      */
-    public function testNotFilenameFilterSinglePattern(): void
+    public function testFilenameFilterNegatedSinglePattern(): void
     {
         $iterator = new RecursiveDirectoryIterator(
             $this->root->url(),
             RecursiveDirectoryIterator::SKIP_DOTS,
         );
         $recursiveIterator = new RecursiveIteratorIterator($iterator);
-        $filtered = new NotFilenameFilterIterator($recursiveIterator, ['*Test.php']);
+        $filtered = new FilenameFilterIterator($recursiveIterator, ['*Test.php'], negate: true);
 
         $files = [];
         foreach ($filtered as $file) {
@@ -323,16 +320,16 @@ class PatternFilterIteratorTest extends TestCase
     }
 
     /**
-     * Test NotFilenameFilterIterator with multiple patterns
+     * Test FilenameFilterIterator with negate parameter (multiple patterns)
      */
-    public function testNotFilenameFilterMultiplePatterns(): void
+    public function testFilenameFilterNegatedMultiplePatterns(): void
     {
         $iterator = new RecursiveDirectoryIterator(
             $this->root->url(),
             RecursiveDirectoryIterator::SKIP_DOTS,
         );
         $recursiveIterator = new RecursiveIteratorIterator($iterator);
-        $filtered = new NotFilenameFilterIterator($recursiveIterator, ['*.md', '*.json']);
+        $filtered = new FilenameFilterIterator($recursiveIterator, ['*.md', '*.json'], negate: true);
 
         $files = [];
         foreach ($filtered as $file) {
@@ -345,15 +342,15 @@ class PatternFilterIteratorTest extends TestCase
     }
 
     /**
-     * Test NotContainsPathFilterIterator with single pattern
+     * Test ContainsPathFilterIterator with negate parameter (single pattern)
      */
-    public function testNotContainsPathFilterSinglePattern(): void
+    public function testContainsPathFilterNegatedSinglePattern(): void
     {
         $iterator = new RecursiveDirectoryIterator(
             $this->root->url(),
             RecursiveDirectoryIterator::SKIP_DOTS,
         );
-        $filtered = new NotContainsPathFilterIterator($iterator, ['Controller']);
+        $filtered = new ContainsPathFilterIterator($iterator, ['Controller'], negate: true);
 
         $recursiveIterator = new RecursiveIteratorIterator($filtered);
         $files = [];
@@ -371,15 +368,15 @@ class PatternFilterIteratorTest extends TestCase
     }
 
     /**
-     * Test NotContainsPathFilterIterator allows directory traversal
+     * Test ContainsPathFilterIterator with negate allows directory traversal
      */
-    public function testNotContainsPathFilterAllowsDirectoryTraversal(): void
+    public function testContainsPathFilterNegatedAllowsDirectoryTraversal(): void
     {
         $iterator = new RecursiveDirectoryIterator(
             $this->root->url(),
             RecursiveDirectoryIterator::SKIP_DOTS,
         );
-        $filtered = new NotContainsPathFilterIterator($iterator, ['Controller']);
+        $filtered = new ContainsPathFilterIterator($iterator, ['Controller'], negate: true);
 
         $recursiveIterator = new RecursiveIteratorIterator($filtered);
         $files = [];
@@ -403,11 +400,11 @@ class PatternFilterIteratorTest extends TestCase
             $this->root->url(),
             RecursiveDirectoryIterator::SKIP_DOTS,
         );
-        $recursiveIterator = new RecursiveIteratorIterator($iterator);
-        $filtered = new ContainsPathFilterIterator($recursiveIterator, ['Model']);
+        $filtered = new ContainsPathFilterIterator($iterator, ['Model']);
+        $recursiveIterator = new RecursiveIteratorIterator($filtered);
 
         $files = [];
-        foreach ($filtered as $file) {
+        foreach ($recursiveIterator as $file) {
             $files[] = $file->getFilename();
         }
 
@@ -426,11 +423,11 @@ class PatternFilterIteratorTest extends TestCase
             $this->root->url(),
             RecursiveDirectoryIterator::SKIP_DOTS,
         );
-        $recursiveIterator = new RecursiveIteratorIterator($iterator);
-        $filtered = new ContainsPathFilterIterator($recursiveIterator, ['Controller', 'TestCase']);
+        $filtered = new ContainsPathFilterIterator($iterator, ['Controller', 'TestCase']);
+        $recursiveIterator = new RecursiveIteratorIterator($filtered);
 
         $files = [];
-        foreach ($filtered as $file) {
+        foreach ($recursiveIterator as $file) {
             $files[] = $file->getFilename();
         }
 
@@ -440,6 +437,33 @@ class PatternFilterIteratorTest extends TestCase
         $this->assertContains('UserTest.php', $files);
         $this->assertContains('PostTest.php', $files);
         $this->assertNotContains('User.php', $files); // In Model, not Controller/TestCase
+    }
+
+    /**
+     * Test ContainsPathFilterIterator with mixed string and regex patterns
+     */
+    public function testContainsPathFilterMixedPatterns(): void
+    {
+        $iterator = new RecursiveDirectoryIterator(
+            $this->root->url(),
+            RecursiveDirectoryIterator::SKIP_DOTS,
+        );
+        // Mix string pattern 'TestCase' with regex pattern matching Controller files
+        $filtered = new ContainsPathFilterIterator($iterator, ['TestCase', '/Controller\.php$/']);
+        $recursiveIterator = new RecursiveIteratorIterator($filtered);
+
+        $files = [];
+        foreach ($recursiveIterator as $file) {
+            $files[] = $file->getFilename();
+        }
+
+        // Should include files matching either pattern
+        $this->assertContains('AppController.php', $files);
+        $this->assertContains('UsersController.php', $files);
+        $this->assertContains('UserTest.php', $files);
+        $this->assertContains('PostTest.php', $files);
+        $this->assertNotContains('User.php', $files);
+        $this->assertNotContains('Post.php', $files);
     }
 
     /**
