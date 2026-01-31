@@ -161,7 +161,15 @@ class MysqlSchemaDialectTest extends TestCase
             ],
             [
                 'BINARY(1)',
-                ['type' => 'binary', 'length' => 1],
+                ['type' => 'binary', 'length' => 1, 'fixed' => true],
+            ],
+            [
+                'BINARY(20)',
+                ['type' => 'binary', 'length' => 20, 'fixed' => true],
+            ],
+            [
+                'VARBINARY(20)',
+                ['type' => 'binary', 'length' => 20],
             ],
             [
                 'TEXT',
@@ -258,6 +266,18 @@ class MysqlSchemaDialectTest extends TestCase
             [
                 'POLYGON',
                 ['type' => 'polygon', 'length' => null],
+            ],
+            [
+                'BIT(1)',
+                ['type' => 'bit', 'length' => 1],
+            ],
+            [
+                'BIT(8)',
+                ['type' => 'bit', 'length' => 8],
+            ],
+            [
+                'BIT(64)',
+                ['type' => 'bit', 'length' => 64],
             ],
         ];
     }
@@ -1248,7 +1268,13 @@ SQL;
             [
                 'bit',
                 ['type' => 'binary', 'length' => 1],
-                '`bit` BINARY(1)',
+                '`bit` VARBINARY(1)',
+            ],
+            // Fixed binary (BINARY vs VARBINARY)
+            [
+                'hash',
+                ['type' => 'binary', 'length' => 20, 'fixed' => true],
+                '`hash` BINARY(20)',
             ],
             // Integers
             [
@@ -1493,6 +1519,22 @@ SQL;
                 'p',
                 ['type' => 'polygon', 'null' => false, 'srid' => 4326],
                 '`p` POLYGON NOT NULL SRID 4326',
+            ],
+            // Bit
+            [
+                'active',
+                ['type' => 'bit', 'length' => 1],
+                '`active` BIT(1)',
+            ],
+            [
+                'flags',
+                ['type' => 'bit', 'length' => 8, 'null' => false],
+                '`flags` BIT(8) NOT NULL',
+            ],
+            [
+                'permissions',
+                ['type' => 'bit', 'length' => 64],
+                '`permissions` BIT(64)',
             ],
         ];
     }
