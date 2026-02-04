@@ -16,6 +16,7 @@ declare(strict_types=1);
  */
 namespace Cake\Controller;
 
+use Cake\Controller\Attribute\MapRequestDto;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\App;
 use Cake\Core\ContainerInterface;
@@ -31,6 +32,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionNamedType;
+use ReflectionParameter;
 use function Cake\Core\toBool;
 use function Cake\Core\toFloat;
 use function Cake\Core\toInt;
@@ -184,7 +186,14 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
     {
         $resolved = [];
         $function = new ReflectionFunction($action);
+        $request = $this->controller->getRequest();
         foreach ($function->getParameters() as $parameter) {
+            $attribute = $this->getMapRequestDtoAttribute($parameter);
+            if ($attribute !== null) {
+                $resolved[] = $this->resolveDtoFromRequest($parameter, $attribute, $request);
+                continue;
+            }
+
             $type = $parameter->getType();
 
             // Check for dependency injection for classes
@@ -267,6 +276,98 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
         }
 
         return array_merge($resolved, $passedParams);
+    }
+
+    /**
+     * @param \ReflectionParameter $parameter
+     * @return \Cake\Controller\Attribute\MapRequestDto|null
+     */
+    protected function getMapRequestDtoAttribute(ReflectionParameter $parameter): ?MapRequestDto
+    {
+        /** @var array<\ReflectionAttribute<\Cake\Controller\Attribute\MapRequestDto>> $attributes */
+        $attributes = $parameter->getAttributes(MapRequestDto::class);
+        foreach ($attributes as $attribute) {
+            return $attribute->newInstance();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param \ReflectionParameter $parameter
+     * @param \Cake\Controller\Attribute\MapRequestDto $attribute
+     * @param \Cake\Http\ServerRequest $request
+     * @return object
+     */
+    protected function resolveDtoFromRequest(
+        ReflectionParameter $parameter,
+        MapRequestDto $attribute,
+        ServerRequest $request,
+    ): object {
+        $dtoClass = $attribute->class;
+        if ($dtoClass === null) {
+            $type = $parameter->getType();
+            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
+                $dtoClass = $type->getName();
+            }
+        }
+
+        if ($dtoClass === null || !class_exists($dtoClass)) {
+            throw new InvalidParameterException([
+                'template' => 'missing_dependency',
+                'parameter' => $parameter->getName(),
+                'type' => $dtoClass ?? 'Dto',
+            ]);
+        }
+
+        if (!method_exists($dtoClass, 'createFromArray')) {
+            throw new InvalidParameterException([
+                'template' => 'missing_dependency',
+                'parameter' => $parameter->getName(),
+                'type' => $dtoClass,
+            ]);
+        }
+
+        $data = $this->extractDtoData($request, $attribute->source);
+
+        /** @var class-string $dtoClass */
+        return $dtoClass::createFromArray($data);
+    }
+
+    /**
+     * @param \Cake\Http\ServerRequest $request
+     * @param string $source
+     * @return array<string, mixed>
+     */
+    protected function extractDtoData(ServerRequest $request, string $source): array
+    {
+        return match ($source) {
+            MapRequestDto::SOURCE_BODY => (array)$request->getData(),
+            MapRequestDto::SOURCE_QUERY => $request->getQueryParams(),
+            MapRequestDto::SOURCE_REQUEST => array_merge(
+                $request->getQueryParams(),
+                (array)$request->getData(),
+            ),
+            default => $this->extractAutoDtoData($request),
+        };
+    }
+
+    /**
+     * @param \Cake\Http\ServerRequest $request
+     * @return array<string, mixed>
+     */
+    protected function extractAutoDtoData(ServerRequest $request): array
+    {
+        if ($request->is(['get', 'head'])) {
+            return $request->getQueryParams();
+        }
+
+        $data = (array)$request->getData();
+        if ($data !== []) {
+            return $data;
+        }
+
+        return $request->getQueryParams();
     }
 
     /**

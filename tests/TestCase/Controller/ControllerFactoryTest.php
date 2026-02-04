@@ -562,6 +562,30 @@ class ControllerFactoryTest extends TestCase
         $this->factory->invoke($controller);
     }
 
+    public function testInvokeMapRequestDtoAttribute(): void
+    {
+        $request = new ServerRequest([
+            'url' => 'dependencies/requestDto',
+            'params' => [
+                'plugin' => null,
+                'controller' => 'Dependencies',
+                'action' => 'requestDto',
+            ],
+            'post' => [
+                'title' => 'Map Request',
+                'count' => '3',
+            ],
+            'environment' => [
+                'REQUEST_METHOD' => 'POST',
+            ],
+        ]);
+        $controller = $this->factory->create($request);
+        $result = $this->factory->invoke($controller);
+        $data = json_decode((string)$result->getBody(), true);
+
+        $this->assertSame(['title' => 'Map Request', 'count' => '3'], $data);
+    }
+
     public function testInvokeInjectParametersRequiredMissingUntyped(): void
     {
         $request = new ServerRequest([

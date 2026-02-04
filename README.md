@@ -52,6 +52,20 @@ Assuming you have PHPUnit installed (`composer install`), you can run the tests 
    a non-SQLite datasource.
 3. Run `vendor/bin/phpunit`.
 
+## Controller Request DTO Mapping (Draft)
+
+You can map request data into value objects using the `#[MapRequestDto]` attribute on action
+parameters. The target class only needs a static `createFromArray()` method.
+
+```php
+use Cake\Controller\Attribute\MapRequestDto;
+
+public function add(#[MapRequestDto] UserDto $dto): void
+{
+    // $dto is built from request body/query data
+}
+```
+
 ## Learn More
 
 * [CakePHP](https://cakephp.org) - The home of the CakePHP project.

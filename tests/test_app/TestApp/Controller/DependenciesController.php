@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace TestApp\Controller;
 
+use Cake\Controller\Attribute\MapRequestDto;
 use Cake\Controller\Controller;
 use Cake\Event\EventManagerInterface;
 use Cake\Http\ServerRequest;
 use stdClass;
+use TestApp\Dto\RequestDataDto;
 use TestApp\ReflectionDependency;
 
 /**
@@ -90,6 +92,13 @@ class DependenciesController extends Controller
     public function requiredDep(stdClass $dep, $any = null, ?string $str = null)
     {
         return $this->response->withStringBody(json_encode(compact('dep', 'any', 'str')));
+    }
+
+    public function requestDto(
+        #[MapRequestDto]
+        RequestDataDto $dto,
+    ) {
+        return $this->response->withStringBody(json_encode($dto->toArray()));
     }
 
     /**
