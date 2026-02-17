@@ -126,6 +126,60 @@ class BaseCommandTest extends TestCase
     }
 
     /**
+     * Test that $this->io is accessible in initialize()
+     */
+    public function testInitializeCanAccessIo(): void
+    {
+        $command = new class extends Command {
+            public bool $ioAccessible = false;
+
+            public function initialize(): void
+            {
+                $this->ioAccessible = isset($this->io);
+            }
+
+            public function execute(Arguments $args, ConsoleIo $io): int
+            {
+                return static::CODE_SUCCESS;
+            }
+        };
+        $command->setName('cake test');
+        $output = new StubConsoleOutput();
+        $io = Mockery::mock(ConsoleIo::class, [$output, $output, null, null])->makePartial();
+
+        $command->run([], $io);
+
+        $this->assertTrue($command->ioAccessible);
+    }
+
+    /**
+     * Test that $this->args is accessible in initialize()
+     */
+    public function testInitializeCanAccessArgs(): void
+    {
+        $command = new class extends Command {
+            public bool $argsAccessible = false;
+
+            public function initialize(): void
+            {
+                $this->argsAccessible = isset($this->args);
+            }
+
+            public function execute(Arguments $args, ConsoleIo $io): int
+            {
+                return static::CODE_SUCCESS;
+            }
+        };
+        $command->setName('cake test');
+        $output = new StubConsoleOutput();
+        $io = Mockery::mock(ConsoleIo::class, [$output, $output, null, null])->makePartial();
+
+        $command->run([], $io);
+
+        $this->assertTrue($command->argsAccessible);
+    }
+
+    /**
      * Test that hydrated args contain the parsed arguments from the command line.
      */
     public function testRunHydratedArgsContainParsedValues(): void
