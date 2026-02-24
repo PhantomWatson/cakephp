@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Cake\Controller;
 
 use Cake\Controller\Attribute\MapRequestDto;
+use Cake\Controller\Attribute\RequestDtoSource;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\App;
 use Cake\Core\ContainerInterface;
@@ -336,19 +337,19 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
 
     /**
      * @param \Cake\Http\ServerRequest $request
-     * @param string $source
+     * @param \Cake\Controller\Attribute\RequestDtoSource $source
      * @return array<string, mixed>
      */
-    protected function extractDtoData(ServerRequest $request, string $source): array
+    protected function extractDtoData(ServerRequest $request, RequestDtoSource $source): array
     {
         return match ($source) {
-            MapRequestDto::SOURCE_BODY => (array)$request->getData(),
-            MapRequestDto::SOURCE_QUERY => $request->getQueryParams(),
-            MapRequestDto::SOURCE_REQUEST => array_merge(
+            RequestDtoSource::Body => (array)$request->getData(),
+            RequestDtoSource::Query => $request->getQueryParams(),
+            RequestDtoSource::Request => array_merge(
                 $request->getQueryParams(),
                 (array)$request->getData(),
             ),
-            default => $this->extractAutoDtoData($request),
+            RequestDtoSource::Auto => $this->extractAutoDtoData($request),
         };
     }
 
