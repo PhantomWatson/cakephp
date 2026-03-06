@@ -562,7 +562,7 @@ class ControllerFactoryTest extends TestCase
         $this->factory->invoke($controller);
     }
 
-    public function testInvokeMapRequestDtoAttribute(): void
+    public function testInvokeMapRequestToDtoAttribute(): void
     {
         $request = new ServerRequest([
             'url' => 'dependencies/requestDto',

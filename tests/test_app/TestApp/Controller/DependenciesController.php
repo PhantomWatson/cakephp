@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace TestApp\Controller;
 
-use Cake\Controller\Attribute\MapRequestDto;
+use Cake\Controller\Attribute\MapRequestToDto;
 use Cake\Controller\Controller;
 use Cake\Event\EventManagerInterface;
 use Cake\Http\ServerRequest;
@@ -95,7 +95,7 @@ class DependenciesController extends Controller
     }
 
     public function requestDto(
-        #[MapRequestDto]
+        #[MapRequestToDto]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));

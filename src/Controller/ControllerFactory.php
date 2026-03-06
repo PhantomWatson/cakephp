@@ -16,8 +16,8 @@ declare(strict_types=1);
  */
 namespace Cake\Controller;
 
-use Cake\Controller\Attribute\MapRequestDto;
-use Cake\Controller\Attribute\RequestDtoSource;
+use Cake\Controller\Attribute\MapRequestToDto;
+use Cake\Controller\Attribute\RequestToDtoSource;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\App;
 use Cake\Core\ContainerInterface;
@@ -189,7 +189,7 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
         $function = new ReflectionFunction($action);
         $request = $this->controller->getRequest();
         foreach ($function->getParameters() as $parameter) {
-            $attribute = $this->getMapRequestDtoAttribute($parameter);
+            $attribute = $this->getMapRequestToDtoAttribute($parameter);
             if ($attribute !== null) {
                 $resolved[] = $this->resolveDtoFromRequest($parameter, $attribute, $request);
                 continue;
@@ -281,12 +281,12 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
 
     /**
      * @param \ReflectionParameter $parameter
-     * @return \Cake\Controller\Attribute\MapRequestDto|null
+     * @return \Cake\Controller\Attribute\MapRequestToDto|null
      */
-    protected function getMapRequestDtoAttribute(ReflectionParameter $parameter): ?MapRequestDto
+    protected function getMapRequestToDtoAttribute(ReflectionParameter $parameter): ?MapRequestToDto
     {
-        /** @var array<\ReflectionAttribute<\Cake\Controller\Attribute\MapRequestDto>> $attributes */
-        $attributes = $parameter->getAttributes(MapRequestDto::class);
+        /** @var array<\ReflectionAttribute<\Cake\Controller\Attribute\MapRequestToDto>> $attributes */
+        $attributes = $parameter->getAttributes(MapRequestToDto::class);
         foreach ($attributes as $attribute) {
             return $attribute->newInstance();
         }
@@ -296,13 +296,13 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
 
     /**
      * @param \ReflectionParameter $parameter
-     * @param \Cake\Controller\Attribute\MapRequestDto $attribute
+     * @param \Cake\Controller\Attribute\MapRequestToDto $attribute
      * @param \Cake\Http\ServerRequest $request
      * @return object
      */
     protected function resolveDtoFromRequest(
         ReflectionParameter $parameter,
-        MapRequestDto $attribute,
+        MapRequestToDto $attribute,
         ServerRequest $request,
     ): object {
         $dtoClass = $attribute->class;
@@ -337,19 +337,19 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
 
     /**
      * @param \Cake\Http\ServerRequest $request
-     * @param \Cake\Controller\Attribute\RequestDtoSource $source
+     * @param \Cake\Controller\Attribute\RequestToDtoSource $source
      * @return array<string, mixed>
      */
-    protected function extractDtoData(ServerRequest $request, RequestDtoSource $source): array
+    protected function extractDtoData(ServerRequest $request, RequestToDtoSource $source): array
     {
         return match ($source) {
-            RequestDtoSource::Body => (array)$request->getData(),
-            RequestDtoSource::Query => $request->getQueryParams(),
-            RequestDtoSource::Request => array_merge(
+            RequestToDtoSource::Body => (array)$request->getData(),
+            RequestToDtoSource::Query => $request->getQueryParams(),
+            RequestToDtoSource::Request => array_merge(
                 $request->getQueryParams(),
                 (array)$request->getData(),
             ),
-            RequestDtoSource::Auto => $this->extractAutoDtoData($request),
+            RequestToDtoSource::Auto => $this->extractAutoDtoData($request),
         };
     }
 

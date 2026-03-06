@@ -6,7 +6,7 @@ namespace Cake\Controller\Attribute;
 /**
  * Source for DTO data mapping.
  */
-enum RequestDtoSource: string
+enum RequestToDtoSource: string
 {
     case Body = 'body';
     case Query = 'query';
