@@ -562,7 +562,7 @@ class ControllerFactoryTest extends TestCase
         $this->factory->invoke($controller);
     }
 
-    public function testInvokeMapRequestToDtoAttribute(): void
+    public function testInvokeRequestToDtoAttribute(): void
     {
         $request = new ServerRequest([
             'url' => 'dependencies/requestDto',
@@ -586,7 +586,7 @@ class ControllerFactoryTest extends TestCase
         $this->assertSame(['title' => 'Map Request', 'count' => '3'], $data);
     }
 
-    public function testInvokeMapRequestToDtoBodySource(): void
+    public function testInvokeRequestToDtoBodySource(): void
     {
         $request = new ServerRequest([
             'url' => 'dependencies/requestDtoBody',
@@ -612,7 +612,7 @@ class ControllerFactoryTest extends TestCase
         $this->assertSame(['title' => 'Body Data'], $data);
     }
 
-    public function testInvokeMapRequestToDtoQuerySource(): void
+    public function testInvokeRequestToDtoQuerySource(): void
     {
         $request = new ServerRequest([
             'url' => 'dependencies/requestDtoQuery',
@@ -638,7 +638,7 @@ class ControllerFactoryTest extends TestCase
         $this->assertSame(['search' => 'query value'], $data);
     }
 
-    public function testInvokeMapRequestToDtoRequestSource(): void
+    public function testInvokeRequestToDtoRequestSource(): void
     {
         $request = new ServerRequest([
             'url' => 'dependencies/requestDtoRequest',

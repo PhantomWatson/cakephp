@@ -16,7 +16,7 @@ declare(strict_types=1);
  */
 namespace Cake\Controller;
 
-use Cake\Controller\Attribute\MapRequestToDto;
+use Cake\Controller\Attribute\RequestToDto;
 use Cake\Controller\Attribute\RequestToDtoSource;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\App;
@@ -189,7 +189,7 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
         $function = new ReflectionFunction($action);
         $request = $this->controller->getRequest();
         foreach ($function->getParameters() as $parameter) {
-            $attribute = $this->getMapRequestToDtoAttribute($parameter);
+            $attribute = $this->getRequestToDtoAttribute($parameter);
             if ($attribute !== null) {
                 $resolved[] = $this->resolveDtoFromRequest($parameter, $attribute, $request);
                 continue;
@@ -281,12 +281,12 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
 
     /**
      * @param \ReflectionParameter $parameter
-     * @return \Cake\Controller\Attribute\MapRequestToDto|null
+     * @return \Cake\Controller\Attribute\RequestToDto|null
      */
-    protected function getMapRequestToDtoAttribute(ReflectionParameter $parameter): ?MapRequestToDto
+    protected function getRequestToDtoAttribute(ReflectionParameter $parameter): ?RequestToDto
     {
-        /** @var array<\ReflectionAttribute<\Cake\Controller\Attribute\MapRequestToDto>> $attributes */
-        $attributes = $parameter->getAttributes(MapRequestToDto::class);
+        /** @var array<\ReflectionAttribute<\Cake\Controller\Attribute\RequestToDto>> $attributes */
+        $attributes = $parameter->getAttributes(RequestToDto::class);
         foreach ($attributes as $attribute) {
             return $attribute->newInstance();
         }
@@ -296,13 +296,13 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
 
     /**
      * @param \ReflectionParameter $parameter
-     * @param \Cake\Controller\Attribute\MapRequestToDto $attribute
+     * @param \Cake\Controller\Attribute\RequestToDto $attribute
      * @param \Cake\Http\ServerRequest $request
      * @return object
      */
     protected function resolveDtoFromRequest(
         ReflectionParameter $parameter,
-        MapRequestToDto $attribute,
+        RequestToDto $attribute,
         ServerRequest $request,
     ): object {
         $dtoClass = $attribute->class;

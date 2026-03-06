@@ -6,7 +6,7 @@ namespace Cake\Controller\Attribute;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_PARAMETER)]
-class MapRequestToDto
+class RequestToDto
 {
     /**
      * @param string|null $class DTO class name (optional for typed parameters)

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace TestApp\Controller;
 
-use Cake\Controller\Attribute\MapRequestToDto;
+use Cake\Controller\Attribute\RequestToDto;
 use Cake\Controller\Attribute\RequestToDtoSource;
 use Cake\Controller\Controller;
 use Cake\Event\EventManagerInterface;
@@ -96,28 +96,28 @@ class DependenciesController extends Controller
     }
 
     public function requestDto(
-        #[MapRequestToDto]
+        #[RequestToDto]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));
     }
 
     public function requestDtoBody(
-        #[MapRequestToDto(source: RequestToDtoSource::Body)]
+        #[RequestToDto(source: RequestToDtoSource::Body)]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));
     }
 
     public function requestDtoQuery(
-        #[MapRequestToDto(source: RequestToDtoSource::Query)]
+        #[RequestToDto(source: RequestToDtoSource::Query)]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));
     }
 
     public function requestDtoRequest(
-        #[MapRequestToDto(source: RequestToDtoSource::Request)]
+        #[RequestToDto(source: RequestToDtoSource::Request)]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));
