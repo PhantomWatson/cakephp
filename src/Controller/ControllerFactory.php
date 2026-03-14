@@ -17,7 +17,6 @@ declare(strict_types=1);
 namespace Cake\Controller;
 
 use Cake\Controller\Attribute\RequestToDto;
-use Cake\Controller\Attribute\RequestToDtoSourceEnum;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\App;
 use Cake\Core\ContainerInterface;
@@ -329,46 +328,8 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
             ]);
         }
 
-        $data = $this->extractDtoData($request, $attribute->source);
-
         /** @var class-string $dtoClass */
-        return $dtoClass::createFromArray($data);
-    }
-
-    /**
-     * @param \Cake\Http\ServerRequest $request
-     * @param \Cake\Controller\Attribute\RequestToDtoSourceEnum $source
-     * @return array<string, mixed>
-     */
-    protected function extractDtoData(ServerRequest $request, RequestToDtoSourceEnum $source): array
-    {
-        return match ($source) {
-            RequestToDtoSourceEnum::Body => (array)$request->getData(),
-            RequestToDtoSourceEnum::Query => $request->getQueryParams(),
-            RequestToDtoSourceEnum::Request => array_merge(
-                $request->getQueryParams(),
-                (array)$request->getData(),
-            ),
-            RequestToDtoSourceEnum::Auto => $this->extractAutoDtoData($request),
-        };
-    }
-
-    /**
-     * @param \Cake\Http\ServerRequest $request
-     * @return array<string, mixed>
-     */
-    protected function extractAutoDtoData(ServerRequest $request): array
-    {
-        if ($request->is(['get', 'head'])) {
-            return $request->getQueryParams();
-        }
-
-        $data = (array)$request->getData();
-        if ($data !== []) {
-            return $data;
-        }
-
-        return $request->getQueryParams();
+        return $dtoClass::createFromArray($attribute->extractData($request));
     }
 
     /**
