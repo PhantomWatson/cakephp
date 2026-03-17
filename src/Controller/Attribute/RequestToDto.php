@@ -4,10 +4,13 @@ declare(strict_types=1);
 namespace Cake\Controller\Attribute;
 
 use Attribute;
+use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Http\ServerRequest;
+use ReflectionNamedType;
+use ReflectionParameter;
 
 #[Attribute(Attribute::TARGET_PARAMETER)]
-class RequestToDto
+class RequestToDto implements ParameterAttributeInterface
 {
     /**
      * @param string|null $class DTO class name (optional for typed parameters)
@@ -20,12 +23,45 @@ class RequestToDto
     }
 
     /**
+     * @inheritDoc
+     */
+    public function resolve(ReflectionParameter $parameter, ServerRequest $request): object
+    {
+        $dtoClass = $this->class;
+        if ($dtoClass === null) {
+            $type = $parameter->getType();
+            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
+                $dtoClass = $type->getName();
+            }
+        }
+
+        if ($dtoClass === null || !class_exists($dtoClass)) {
+            throw new InvalidParameterException([
+                'template' => 'missing_dependency',
+                'parameter' => $parameter->getName(),
+                'type' => $dtoClass ?? 'Dto',
+            ]);
+        }
+
+        if (!method_exists($dtoClass, 'createFromArray')) {
+            throw new InvalidParameterException([
+                'template' => 'missing_dependency',
+                'parameter' => $parameter->getName(),
+                'type' => $dtoClass,
+            ]);
+        }
+
+        /** @var class-string $dtoClass */
+        return $dtoClass::createFromArray($this->extractData($request));
+    }
+
+    /**
      * Extract data from request based on source.
      *
      * @param \Cake\Http\ServerRequest $request The server request
      * @return array<string, mixed>
      */
-    public function extractData(ServerRequest $request): array
+    protected function extractData(ServerRequest $request): array
     {
         return match ($this->source) {
             RequestToDtoSourceEnum::Body => (array)$request->getData(),

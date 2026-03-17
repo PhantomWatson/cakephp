@@ -16,7 +16,7 @@ declare(strict_types=1);
  */
 namespace Cake\Controller;
 
-use Cake\Controller\Attribute\RequestToDto;
+use Cake\Controller\Attribute\ParameterAttributeInterface;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\App;
 use Cake\Core\ContainerInterface;
@@ -188,9 +188,9 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
         $function = new ReflectionFunction($action);
         $request = $this->controller->getRequest();
         foreach ($function->getParameters() as $parameter) {
-            $attribute = $this->getRequestToDtoAttribute($parameter);
-            if ($attribute !== null) {
-                $resolved[] = $this->resolveDtoFromRequest($parameter, $attribute, $request);
+            $attributeValue = $this->resolveParameterAttribute($parameter, $request);
+            if ($attributeValue !== null) {
+                $resolved[] = $attributeValue;
                 continue;
             }
 
@@ -279,57 +279,22 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
     }
 
     /**
-     * @param \ReflectionParameter $parameter
-     * @return \Cake\Controller\Attribute\RequestToDto|null
+     * Resolve parameter value from attributes implementing ParameterAttributeInterface.
+     *
+     * @param \ReflectionParameter $parameter The parameter to resolve
+     * @param \Cake\Http\ServerRequest $request The server request
+     * @return mixed The resolved value or null if no matching attribute found
      */
-    protected function getRequestToDtoAttribute(ReflectionParameter $parameter): ?RequestToDto
+    protected function resolveParameterAttribute(ReflectionParameter $parameter, ServerRequest $request): mixed
     {
-        /** @var array<\ReflectionAttribute<\Cake\Controller\Attribute\RequestToDto>> $attributes */
-        $attributes = $parameter->getAttributes(RequestToDto::class);
-        foreach ($attributes as $attribute) {
-            return $attribute->newInstance();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param \ReflectionParameter $parameter
-     * @param \Cake\Controller\Attribute\RequestToDto $attribute
-     * @param \Cake\Http\ServerRequest $request
-     * @return object
-     */
-    protected function resolveDtoFromRequest(
-        ReflectionParameter $parameter,
-        RequestToDto $attribute,
-        ServerRequest $request,
-    ): object {
-        $dtoClass = $attribute->class;
-        if ($dtoClass === null) {
-            $type = $parameter->getType();
-            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
-                $dtoClass = $type->getName();
+        foreach ($parameter->getAttributes() as $attribute) {
+            $instance = $attribute->newInstance();
+            if ($instance instanceof ParameterAttributeInterface) {
+                return $instance->resolve($parameter, $request);
             }
         }
 
-        if ($dtoClass === null || !class_exists($dtoClass)) {
-            throw new InvalidParameterException([
-                'template' => 'missing_dependency',
-                'parameter' => $parameter->getName(),
-                'type' => $dtoClass ?? 'Dto',
-            ]);
-        }
-
-        if (!method_exists($dtoClass, 'createFromArray')) {
-            throw new InvalidParameterException([
-                'template' => 'missing_dependency',
-                'parameter' => $parameter->getName(),
-                'type' => $dtoClass,
-            ]);
-        }
-
-        /** @var class-string $dtoClass */
-        return $dtoClass::createFromArray($attribute->extractData($request));
+        return null;
     }
 
     /**
