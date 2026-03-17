@@ -10,15 +10,15 @@ use ReflectionNamedType;
 use ReflectionParameter;
 
 #[Attribute(Attribute::TARGET_PARAMETER)]
-class RequestToDto implements ParameterAttributeInterface
+readonly class RequestToDto implements ParameterAttributeInterface
 {
     /**
      * @param string|null $class DTO class name (optional for typed parameters)
      * @param \Cake\Controller\Attribute\RequestToDtoSourceEnum $source Data source: body, query, request, or auto
      */
     public function __construct(
-        public readonly ?string $class = null,
-        public readonly RequestToDtoSourceEnum $source = RequestToDtoSourceEnum::Auto,
+        protected ?string $class = null,
+        protected RequestToDtoSourceEnum $source = RequestToDtoSourceEnum::Auto,
     ) {
     }
 
