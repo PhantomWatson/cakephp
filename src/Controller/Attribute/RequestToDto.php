@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Cake\Controller\Attribute;
 
 use Attribute;
+use Cake\Controller\Attribute\Enum\RequestToDtoSource;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Http\ServerRequest;
 use ReflectionNamedType;
@@ -14,11 +15,11 @@ readonly class RequestToDto implements ParameterAttributeInterface
 {
     /**
      * @param string|null $class DTO class name (optional for typed parameters)
-     * @param \Cake\Controller\Attribute\RequestToDtoSourceEnum $source Data source: body, query, request, or auto
+     * @param \Cake\Controller\Attribute\RequestToDtoSource $source Data source: body, query, request, or auto
      */
     public function __construct(
         protected ?string $class = null,
-        protected RequestToDtoSourceEnum $source = RequestToDtoSourceEnum::Auto,
+        protected RequestToDtoSource $source = RequestToDtoSource::Auto,
     ) {
     }
 
@@ -64,13 +65,13 @@ readonly class RequestToDto implements ParameterAttributeInterface
     protected function extractData(ServerRequest $request): array
     {
         return match ($this->source) {
-            RequestToDtoSourceEnum::Body => (array)$request->getData(),
-            RequestToDtoSourceEnum::Query => $request->getQueryParams(),
-            RequestToDtoSourceEnum::Request => array_merge(
+            RequestToDtoSource::Body => (array)$request->getData(),
+            RequestToDtoSource::Query => $request->getQueryParams(),
+            RequestToDtoSource::Request => array_merge(
                 $request->getQueryParams(),
                 (array)$request->getData(),
             ),
-            RequestToDtoSourceEnum::Auto => $this->extractAutoData($request),
+            RequestToDtoSource::Auto => $this->extractAutoData($request),
         };
     }
 

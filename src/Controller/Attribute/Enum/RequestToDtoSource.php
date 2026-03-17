@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Cake\Controller\Attribute;
+namespace Cake\Controller\Attribute\Enum;
 
 /**
  * Source for DTO data mapping.
  */
-enum RequestToDtoSourceEnum: string
+enum RequestToDtoSource: string
 {
     case Body = 'body';
     case Query = 'query';

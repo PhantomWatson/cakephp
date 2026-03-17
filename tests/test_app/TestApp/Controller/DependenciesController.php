@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace TestApp\Controller;
 
+use Cake\Controller\Attribute\Enum\RequestToDtoSource;
 use Cake\Controller\Attribute\RequestToDto;
-use Cake\Controller\Attribute\RequestToDtoSourceEnum;
 use Cake\Controller\Controller;
 use Cake\Event\EventManagerInterface;
 use Cake\Http\ServerRequest;
@@ -103,21 +103,21 @@ class DependenciesController extends Controller
     }
 
     public function requestDtoBody(
-        #[RequestToDto(source: RequestToDtoSourceEnum::Body)]
+        #[RequestToDto(source: RequestToDtoSource::Body)]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));
     }
 
     public function requestDtoQuery(
-        #[RequestToDto(source: RequestToDtoSourceEnum::Query)]
+        #[RequestToDto(source: RequestToDtoSource::Query)]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));
     }
 
     public function requestDtoRequest(
-        #[RequestToDto(source: RequestToDtoSourceEnum::Request)]
+        #[RequestToDto(source: RequestToDtoSource::Request)]
         RequestDataDto $dto,
     ) {
         return $this->response->withStringBody(json_encode($dto->toArray()));
