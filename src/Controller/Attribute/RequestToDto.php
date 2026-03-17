@@ -15,7 +15,7 @@ readonly class RequestToDto implements ParameterAttributeInterface
 {
     /**
      * @param string|null $class DTO class name (optional for typed parameters)
-     * @param \Cake\Controller\Attribute\RequestToDtoSource $source Data source: body, query, request, or auto
+     * @param \Cake\Controller\Attribute\Enum\RequestToDtoSource $source Data source: body, query, request, or auto
      */
     public function __construct(
         protected ?string $class = null,
