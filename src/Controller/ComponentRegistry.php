@@ -16,7 +16,6 @@ declare(strict_types=1);
  */
 namespace Cake\Controller;
 
-use Cake\Container\Container as CakeContainer;
 use Cake\Controller\Exception\MissingComponentException;
 use Cake\Core\App;
 use Cake\Core\ContainerInterface;
@@ -24,8 +23,11 @@ use Cake\Core\Exception\CakeException;
 use Cake\Core\ObjectRegistry;
 use Cake\Event\EventDispatcherInterface;
 use Cake\Event\EventDispatcherTrait;
+use League\Container\Argument\ArgumentReflectorTrait;
+use League\Container\Argument\ArgumentResolverTrait;
 use League\Container\Argument\LiteralArgument;
 use League\Container\Argument\ResolvableArgument;
+use League\Container\ReflectionContainer;
 use Psr\Container\NotFoundExceptionInterface;
 use ReflectionClass;
 use ReflectionFunctionAbstract;
@@ -49,6 +51,10 @@ class ComponentRegistry extends ObjectRegistry implements EventDispatcherInterfa
      */
     use EventDispatcherTrait;
 
+    use ArgumentResolverTrait;
+
+    use ArgumentReflectorTrait;
+
     /**
      * The controller that this collection is associated with.
      *
@@ -57,20 +63,18 @@ class ComponentRegistry extends ObjectRegistry implements EventDispatcherInterfa
     protected ?Controller $_Controller = null;
 
     /**
-     * @var \Cake\Core\ContainerInterface|\Cake\Container\Container|null
+     * @var \Cake\Core\ContainerInterface|null
      */
-    protected ContainerInterface|CakeContainer|null $container = null;
+    protected ?ContainerInterface $container = null;
 
     /**
      * Constructor.
      *
      * @param \Cake\Controller\Controller|null $controller Controller instance.
-     * @param \Cake\Core\ContainerInterface|\Cake\Container\Container|null $container Container instance.
+     * @param \Cake\Core\ContainerInterface|null $container Container instance.
      */
-    public function __construct(
-        ?Controller $controller = null,
-        ContainerInterface|CakeContainer|null $container = null,
-    ) {
+    public function __construct(?Controller $controller = null, ?ContainerInterface $container = null)
+    {
         if ($controller !== null) {
             $this->setController($controller);
         }
@@ -210,9 +214,9 @@ class ComponentRegistry extends ObjectRegistry implements EventDispatcherInterfa
     /**
      * Get container instance.
      *
-     * @return \Cake\Core\ContainerInterface|\Cake\Container\Container
+     * @return \Cake\Core\ContainerInterface
      */
-    protected function getContainer(): ContainerInterface|CakeContainer
+    protected function getContainer(): ContainerInterface
     {
         if ($this->container === null) {
             throw new CakeException('Container not set.');
@@ -227,16 +231,12 @@ class ComponentRegistry extends ObjectRegistry implements EventDispatcherInterfa
      * This method inspects a constructor's parameters and builds a list of
      * arguments that can be passed to the container's add() or extend() methods.
      *
-     * For the League container, arguments are wrapped in LiteralArgument/ResolvableArgument.
-     * For the CakePHP container, raw values and class names are used directly.
-     *
      * @param \ReflectionFunctionAbstract $method The constructor to reflect on
      * @param array<string, mixed> $args Named arguments to pass as literals (e.g., ['config' => []])
-     * @return array<mixed>
+     * @return array<\League\Container\Argument\LiteralArgument|\League\Container\Argument\ResolvableArgument>
      */
     protected function reflectArguments(ReflectionFunctionAbstract $method, array $args = []): array
     {
-        $useCakeContainer = $this->container instanceof CakeContainer;
         $arguments = [];
         $params = $method->getParameters();
 
@@ -245,9 +245,7 @@ class ComponentRegistry extends ObjectRegistry implements EventDispatcherInterfa
 
             // If we have a literal value for this parameter, use it
             if (array_key_exists($name, $args)) {
-                $arguments[$name] = $useCakeContainer
-                    ? $args[$name]
-                    : new LiteralArgument($args[$name]);
+                $arguments[] = new LiteralArgument($args[$name]);
                 continue;
             }
 
@@ -255,17 +253,13 @@ class ComponentRegistry extends ObjectRegistry implements EventDispatcherInterfa
             $type = $param->getType();
             if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
                 // Type-hinted parameter - resolve from container
-                $arguments[$name] = $useCakeContainer
-                    ? $type->getName()
-                    : new ResolvableArgument($type->getName());
+                $arguments[] = new ResolvableArgument($type->getName());
                 continue;
             }
 
             // Check for default value
             if ($param->isDefaultValueAvailable()) {
-                $arguments[$name] = $useCakeContainer
-                    ? $param->getDefaultValue()
-                    : new LiteralArgument($param->getDefaultValue());
+                $arguments[] = new LiteralArgument($param->getDefaultValue());
                 continue;
             }
 
@@ -283,6 +277,20 @@ class ComponentRegistry extends ObjectRegistry implements EventDispatcherInterfa
             );
         }
 
-        return $arguments;
+        return $this->resolveArguments($arguments);
+    }
+
+    /**
+     * Get the mode of the container.
+     *
+     * This method is used to determine how the container should resolve
+     * dependencies and arguments.
+     *
+     * @return int The mode of the container.
+     * @internal
+     */
+    protected function getMode(): int
+    {
+        return ReflectionContainer::AUTO_WIRING;
     }
 }
