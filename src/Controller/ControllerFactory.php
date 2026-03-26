@@ -16,7 +16,6 @@ declare(strict_types=1);
  */
 namespace Cake\Controller;
 
-use Cake\Container\Container as CakeContainer;
 use Cake\Controller\Attribute\ParameterAttributeInterface;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\App;
@@ -46,9 +45,9 @@ use function Cake\Core\toInt;
 class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInterface
 {
     /**
-     * @var \Cake\Core\ContainerInterface|\Cake\Container\Container
+     * @var \Cake\Core\ContainerInterface
      */
-    protected ContainerInterface|CakeContainer $container;
+    protected ContainerInterface $container;
 
     /**
      * @var \Cake\Controller\Controller
@@ -58,9 +57,9 @@ class ControllerFactory implements ControllerFactoryInterface, RequestHandlerInt
     /**
      * Constructor
      *
-     * @param \Cake\Core\ContainerInterface|\Cake\Container\Container $container The container to build controllers with.
+     * @param \Cake\Core\ContainerInterface $container The container to build controllers with.
      */
-    public function __construct(ContainerInterface|CakeContainer $container)
+    public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
     }
