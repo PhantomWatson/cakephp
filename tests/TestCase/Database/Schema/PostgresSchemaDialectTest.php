@@ -721,7 +721,7 @@ SQL;
             $this->markTestSkipped('PostGIS extension is not available');
         }
 
-        // GEOMETRY defaults to srid 0 while GEOGRAPHY defaults to srid 4326
+        // Unconstrained columns default to srid 0, typed columns default to 4326 for geography
         $sql = <<<SQL
             CREATE TABLE ref_table (
                 geometry_geometry GEOMETRY,
@@ -749,7 +749,8 @@ SQL;
                 'length' => null,
                 'precision' => null,
                 'comment' => null,
-                'srid' => null,
+                'geometryType' => 'Geometry',
+                'srid' => 0,
             ],
             'geometry_point' => [
                 'type' => 'geometry',
@@ -758,7 +759,8 @@ SQL;
                 'length' => null,
                 'precision' => null,
                 'comment' => null,
-                'srid' => null,
+                'geometryType' => 'Point',
+                'srid' => 0,
             ],
             'geometry_point_4236' => [
                 'type' => 'geometry',
@@ -767,7 +769,8 @@ SQL;
                 'length' => null,
                 'precision' => null,
                 'comment' => null,
-                'srid' => null,
+                'geometryType' => 'Point',
+                'srid' => 4236,
             ],
             'geography_geometry' => [
                 'type' => 'geography',
@@ -776,6 +779,8 @@ SQL;
                 'length' => null,
                 'precision' => null,
                 'comment' => null,
+                'geometryType' => 'Geometry',
+                'srid' => 0,
             ],
             'geography_point' => [
                 'type' => 'geography',
@@ -784,6 +789,8 @@ SQL;
                 'length' => null,
                 'precision' => null,
                 'comment' => null,
+                'geometryType' => 'Point',
+                'srid' => 4326,
             ],
             'geography_point_0' => [
                 'type' => 'geography',
@@ -792,6 +799,8 @@ SQL;
                 'length' => null,
                 'precision' => null,
                 'comment' => null,
+                'geometryType' => 'Point',
+                'srid' => 4326,
             ],
         ];
 
