@@ -2619,6 +2619,44 @@ class TableTest extends TestCase
         $this->assertFalse($called, 'afterSaveCommit should not fire when transaction is rolled back');
     }
 
+    public function testSaveManyInsideTransactionalNoDoubleDispatch(): void
+    {
+        $table = $this->getTableLocator()->get('authors');
+        $entities = [
+            new Entity(['name' => 'Author A']),
+            new Entity(['name' => 'Author B']),
+        ];
+
+        $callCount = 0;
+        $table->getEventManager()->on('Model.afterSaveCommit', function () use (&$callCount): void {
+            $callCount++;
+        });
+
+        $this->connection->transactional(function () use ($table, $entities): void {
+            $table->saveManyOrFail($entities);
+        });
+
+        $this->assertSame(2, $callCount, 'afterSaveCommit should fire exactly once per entity');
+    }
+
+    public function testSaveManyStandaloneNoDoubleDispatch(): void
+    {
+        $table = $this->getTableLocator()->get('authors');
+        $entities = [
+            new Entity(['name' => 'Author C']),
+            new Entity(['name' => 'Author D']),
+        ];
+
+        $callCount = 0;
+        $table->getEventManager()->on('Model.afterSaveCommit', function () use (&$callCount): void {
+            $callCount++;
+        });
+
+        $table->saveManyOrFail($entities);
+
+        $this->assertSame(2, $callCount, 'afterSaveCommit should fire exactly once per entity');
+    }
+
     /**
      * Asserts the afterSaveCommit is not triggered if transaction is running.
      */
