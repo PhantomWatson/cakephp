@@ -2482,6 +2482,144 @@ class TableTest extends TestCase
     }
 
     /**
+     * Asserts afterSaveCommit is deferred and fires after the outer transaction commits.
+     *
+     * Currently, afterSaveCommit is permanently suppressed when save() is called inside
+     * Connection::transactional(). The event never fires — not during the save (correct,
+     * since the transaction is still open) and not after the outer commit (the bug).
+     *
+     * This test documents the expected behavior: the event should fire after commit.
+     */
+    public function testAfterSaveCommitFiringAfterOuterTransactionCommits(): void
+    {
+        $table = $this->getTableLocator()->get('users');
+        $data = new Entity([
+            'username' => 'superuser',
+            'created' => new DateTime('2013-10-10 00:00'),
+            'updated' => new DateTime('2013-10-10 00:00'),
+        ]);
+
+        $calledDuringTransaction = false;
+        $calledAfterCommit = false;
+        $listener = function ($e, $entity, $options) use (&$calledDuringTransaction, &$calledAfterCommit): void {
+            if ($this->connection->inTransaction()) {
+                $calledDuringTransaction = true;
+            } else {
+                $calledAfterCommit = true;
+            }
+        };
+        $table->getEventManager()->on('Model.afterSaveCommit', $listener);
+
+        $this->connection->transactional(function () use ($table, $data, &$calledDuringTransaction): void {
+            $table->saveOrFail($data);
+            // Event must NOT fire while transaction is still open
+            $this->assertFalse($calledDuringTransaction, 'afterSaveCommit must not fire during an open transaction');
+        });
+
+        // After transactional() returns, the outer transaction has committed.
+        // afterSaveCommit should have fired.
+        $this->assertFalse($calledDuringTransaction, 'afterSaveCommit must not fire during a transaction');
+        $this->assertTrue($calledAfterCommit, 'afterSaveCommit should fire after the outer transaction commits');
+    }
+
+    /**
+     * Asserts afterSaveCommit fires for each table when multiple tables are saved
+     * inside a single Connection::transactional() block.
+     *
+     * This is the cross-table atomicity pattern: wrapping saves to multiple tables
+     * in one transaction. Currently, all afterSaveCommit events are permanently lost.
+     */
+    public function testAfterSaveCommitForCrossTableTransactional(): void
+    {
+        $usersTable = $this->getTableLocator()->get('users');
+        $articlesTable = $this->getTableLocator()->get('articles');
+
+        $userEventFired = false;
+        $articleEventFired = false;
+
+        $usersTable->getEventManager()->on('Model.afterSaveCommit', function () use (&$userEventFired): void {
+            $userEventFired = true;
+        });
+        $articlesTable->getEventManager()->on('Model.afterSaveCommit', function () use (&$articleEventFired): void {
+            $articleEventFired = true;
+        });
+
+        $this->connection->transactional(function () use ($usersTable, $articlesTable): void {
+            $user = new Entity([
+                'username' => 'crossuser',
+                'created' => new DateTime('2013-10-10 00:00'),
+                'updated' => new DateTime('2013-10-10 00:00'),
+            ]);
+            $usersTable->saveOrFail($user);
+
+            $article = new Entity([
+                'title' => 'Cross-table article',
+                'body' => 'Testing cross-table transactional saves',
+                'author_id' => $user->id,
+            ]);
+            $articlesTable->saveOrFail($article);
+        });
+
+        $this->assertTrue($userEventFired, 'afterSaveCommit should fire for users table after outer commit');
+        $this->assertTrue($articleEventFired, 'afterSaveCommit should fire for articles table after outer commit');
+    }
+
+    /**
+     * Asserts afterDeleteCommit fires after an outer transaction commits.
+     *
+     * Same suppression problem as afterSaveCommit: when delete() is called inside
+     * Connection::transactional(), afterDeleteCommit is permanently lost.
+     */
+    public function testAfterDeleteCommitFiringAfterOuterTransactionCommits(): void
+    {
+        $table = $this->getTableLocator()->get('users');
+
+        $called = false;
+        $listener = function ($e, $entity, $options) use (&$called): void {
+            $called = true;
+        };
+        $table->getEventManager()->on('Model.afterDeleteCommit', $listener);
+
+        $user = $table->get(1);
+
+        $this->connection->transactional(function () use ($table, $user): void {
+            $table->deleteOrFail($user);
+        });
+
+        $this->assertTrue($called, 'afterDeleteCommit should fire after the outer transaction commits');
+    }
+
+    /**
+     * Asserts afterSaveCommit events are discarded when the outer transaction rolls back.
+     */
+    public function testAfterSaveCommitNotFiredOnRollback(): void
+    {
+        $table = $this->getTableLocator()->get('users');
+        $data = new Entity([
+            'username' => 'rollbackuser',
+            'created' => new DateTime('2013-10-10 00:00'),
+            'updated' => new DateTime('2013-10-10 00:00'),
+        ]);
+
+        $called = false;
+        $listener = function ($e, $entity, $options) use (&$called): void {
+            $called = true;
+        };
+        $table->getEventManager()->on('Model.afterSaveCommit', $listener);
+
+        try {
+            $this->connection->transactional(function () use ($table, $data): void {
+                $table->saveOrFail($data);
+                throw new \RuntimeException('Force rollback');
+            });
+        } catch (\RuntimeException) {
+            // Expected
+        }
+
+        $this->assertFalse($called, 'afterSaveCommit should not fire when transaction is rolled back');
+    }
+
+    /**
      * Asserts the afterSaveCommit is not triggered if transaction is running.
      */
     public function testAfterSaveCommitWithNonAtomicAndTransactionRunning(): void
