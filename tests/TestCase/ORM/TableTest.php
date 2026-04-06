@@ -2610,9 +2610,9 @@ class TableTest extends TestCase
         try {
             $this->connection->transactional(function () use ($table, $data): void {
                 $table->saveOrFail($data);
-                throw new \RuntimeException('Force rollback');
+                throw new RuntimeException('Force rollback');
             });
-        } catch (\RuntimeException) {
+        } catch (RuntimeException) {
             // Expected
         }
 
