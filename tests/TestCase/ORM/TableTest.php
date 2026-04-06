@@ -2657,6 +2657,40 @@ class TableTest extends TestCase
         $this->assertSame(2, $callCount, 'afterSaveCommit should fire exactly once per entity');
     }
 
+    public function testDeleteManyStandaloneFiresAfterDeleteCommit(): void
+    {
+        $table = $this->getTableLocator()->get('authors');
+        $entities = $table->find()->limit(2)->toArray();
+        $this->assertCount(2, $entities);
+
+        $callCount = 0;
+        $table->getEventManager()->on('Model.afterDeleteCommit', function () use (&$callCount): void {
+            $callCount++;
+        });
+
+        $table->deleteManyOrFail($entities);
+
+        $this->assertSame(2, $callCount, 'afterDeleteCommit should fire once per entity');
+    }
+
+    public function testDeleteManyInsideTransactionalFiresAfterDeleteCommit(): void
+    {
+        $table = $this->getTableLocator()->get('authors');
+        $entities = $table->find()->limit(2)->toArray();
+        $this->assertCount(2, $entities);
+
+        $callCount = 0;
+        $table->getEventManager()->on('Model.afterDeleteCommit', function () use (&$callCount): void {
+            $callCount++;
+        });
+
+        $this->connection->transactional(function () use ($table, $entities): void {
+            $table->deleteManyOrFail($entities);
+        });
+
+        $this->assertSame(2, $callCount, 'afterDeleteCommit should fire once per entity after outer commit');
+    }
+
     /**
      * Asserts the afterSaveCommit is not triggered if transaction is running.
      */
