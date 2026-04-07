@@ -2481,6 +2481,27 @@ class TableTest extends TestCase
         $this->connection->commit();
     }
 
+    public function testAfterSaveCommitPreservesIsNewState(): void
+    {
+        $table = $this->getTableLocator()->get('users');
+        $data = new Entity([
+            'username' => 'isnewuser',
+            'created' => new DateTime('2013-10-10 00:00'),
+            'updated' => new DateTime('2013-10-10 00:00'),
+        ]);
+
+        $wasNew = null;
+        $table->getEventManager()->on('Model.afterSaveCommit', function ($e, $entity) use (&$wasNew): void {
+            $wasNew = $entity->isNew();
+        });
+
+        $this->connection->transactional(function () use ($table, $data): void {
+            $table->saveOrFail($data);
+        });
+
+        $this->assertTrue($wasNew, 'Entity should still report isNew() as true in afterSaveCommit for an INSERT');
+    }
+
     public function testAfterSaveCommitFiringAfterOuterTransactionCommits(): void
     {
         $table = $this->getTableLocator()->get('users');
