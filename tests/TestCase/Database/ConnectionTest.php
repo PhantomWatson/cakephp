@@ -1288,11 +1288,11 @@ class ConnectionTest extends TestCase
         $this->assertSame('default-user', $writeDriver->config()['username'], 'Write username should be inherited.');
     }
 
-    public function testOnCommitCallbackFiredAfterOutermostCommit(): void
+    public function testAfterCommitCallbackFiredAfterOutermostCommit(): void
     {
         $fired = false;
         $this->connection->begin();
-        $this->connection->onCommit(function () use (&$fired): void {
+        $this->connection->afterCommit(function () use (&$fired): void {
             $fired = true;
         });
         $this->assertFalse($fired);
@@ -1300,53 +1300,53 @@ class ConnectionTest extends TestCase
         $this->assertTrue($fired);
     }
 
-    public function testOnCommitCallbackDiscardedOnRollback(): void
+    public function testAfterCommitCallbackDiscardedOnRollback(): void
     {
         $fired = false;
         $this->connection->begin();
-        $this->connection->onCommit(function () use (&$fired): void {
+        $this->connection->afterCommit(function () use (&$fired): void {
             $fired = true;
         });
         $this->connection->rollback();
         $this->assertFalse($fired);
     }
 
-    public function testOnCommitExecutesImmediatelyOutsideTransaction(): void
+    public function testAfterCommitExecutesImmediatelyOutsideTransaction(): void
     {
         $fired = false;
-        $this->connection->onCommit(function () use (&$fired): void {
+        $this->connection->afterCommit(function () use (&$fired): void {
             $fired = true;
         });
         $this->assertTrue($fired);
     }
 
-    public function testOnCommitCallbacksFireInRegistrationOrder(): void
+    public function testAfterCommitCallbacksFireInRegistrationOrder(): void
     {
         $order = [];
         $this->connection->begin();
-        $this->connection->onCommit(function () use (&$order): void {
+        $this->connection->afterCommit(function () use (&$order): void {
             $order[] = 'first';
         });
-        $this->connection->onCommit(function () use (&$order): void {
+        $this->connection->afterCommit(function () use (&$order): void {
             $order[] = 'second';
         });
         $this->connection->commit();
         $this->assertSame(['first', 'second'], $order);
     }
 
-    public function testOnCommitCallbacksDiscardedOnNestedRollbackToBeginning(): void
+    public function testAfterCommitCallbacksDiscardedOnNestedRollbackToBeginning(): void
     {
         $fired = false;
         $this->connection->begin();
         $this->connection->begin(); // nested — savepoint
-        $this->connection->onCommit(function () use (&$fired): void {
+        $this->connection->afterCommit(function () use (&$fired): void {
             $fired = true;
         });
         $this->connection->rollback(true); // rollback to beginning
         $this->assertFalse($fired);
     }
 
-    public function testOnCommitCallbacksSurviveSavepointRollback(): void
+    public function testAfterCommitCallbacksSurviveSavepointRollback(): void
     {
         $this->connection->enableSavePoints();
         $this->skipIf(!$this->connection->isSavePointsEnabled(), 'Driver does not support save points');
@@ -1354,11 +1354,11 @@ class ConnectionTest extends TestCase
         $firedA = false;
         $firedB = false;
         $this->connection->begin();
-        $this->connection->onCommit(function () use (&$firedA): void {
+        $this->connection->afterCommit(function () use (&$firedA): void {
             $firedA = true;
         });
         $this->connection->begin(); // savepoint
-        $this->connection->onCommit(function () use (&$firedB): void {
+        $this->connection->afterCommit(function () use (&$firedB): void {
             $firedB = true;
         });
         $this->connection->rollback(); // rollback savepoint only
@@ -1367,14 +1367,14 @@ class ConnectionTest extends TestCase
         $this->assertTrue($firedB);
     }
 
-    public function testOnCommitCallbackExceptionDoesNotLoseRemainingCallbacks(): void
+    public function testAfterCommitCallbackExceptionDoesNotLoseRemainingCallbacks(): void
     {
         $secondFired = false;
         $this->connection->begin();
-        $this->connection->onCommit(function (): void {
+        $this->connection->afterCommit(function (): void {
             throw new RuntimeException('callback failed');
         });
-        $this->connection->onCommit(function () use (&$secondFired): void {
+        $this->connection->afterCommit(function () use (&$secondFired): void {
             $secondFired = true;
         });
         try {
