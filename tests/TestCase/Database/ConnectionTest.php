@@ -1387,7 +1387,7 @@ class ConnectionTest extends TestCase
         $this->assertTrue($firedB);
     }
 
-    public function testAfterCommitCallbackExceptionDoesNotLoseRemainingCallbacks(): void
+    public function testAfterCommitCallbackExceptionStopsExecution(): void
     {
         $secondFired = false;
         $this->connection->begin();
@@ -1402,6 +1402,6 @@ class ConnectionTest extends TestCase
         } catch (RuntimeException) {
             // Expected
         }
-        $this->assertTrue($secondFired, 'Remaining callbacks should still execute when one throws');
+        $this->assertFalse($secondFired, 'Remaining callbacks should not execute when one throws');
     }
 }
