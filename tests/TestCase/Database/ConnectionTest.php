@@ -1288,7 +1288,7 @@ class ConnectionTest extends TestCase
         $this->assertSame('default-user', $writeDriver->config()['username'], 'Write username should be inherited.');
     }
 
-    public function testAfterCommitCallbackFiredAfterOutermostCommit(): void
+    public function testAfterCommitCallbackFiredOnCommit(): void
     {
         $fired = false;
         $this->connection->begin();
