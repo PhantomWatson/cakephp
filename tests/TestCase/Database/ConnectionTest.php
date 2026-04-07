@@ -1334,6 +1334,26 @@ class ConnectionTest extends TestCase
         $this->assertSame(['first', 'second'], $order);
     }
 
+    public function testAfterCommitCallbacksFiredAfterNestedCommit(): void
+    {
+        $firedOuter = false;
+        $firedInner = false;
+        $this->connection->begin();
+        $this->connection->afterCommit(function () use (&$firedOuter): void {
+            $firedOuter = true;
+        });
+        $this->connection->begin(); // nested
+        $this->connection->afterCommit(function () use (&$firedInner): void {
+            $firedInner = true;
+        });
+        $this->connection->commit(); // commit nested
+        $this->assertFalse($firedOuter, 'Outer callback must not fire until outermost commit');
+        $this->assertFalse($firedInner, 'Inner callback must not fire until outermost commit');
+        $this->connection->commit(); // commit outermost
+        $this->assertTrue($firedOuter);
+        $this->assertTrue($firedInner);
+    }
+
     public function testAfterCommitCallbacksDiscardedOnNestedRollbackToBeginning(): void
     {
         $fired = false;
