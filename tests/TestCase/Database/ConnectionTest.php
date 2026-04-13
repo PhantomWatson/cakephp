@@ -1309,6 +1309,11 @@ class ConnectionTest extends TestCase
         });
         $this->connection->rollback();
         $this->assertFalse($fired);
+
+        // Verify callback doesn't leak into subsequent transaction
+        $this->connection->begin();
+        $this->connection->commit();
+        $this->assertFalse($fired);
     }
 
     public function testAfterCommitExecutesImmediatelyOutsideTransaction(): void
