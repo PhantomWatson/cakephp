@@ -6098,6 +6098,31 @@ class TableTest extends TestCase
     }
 
     /**
+     * Test that findOrCreate defers afterSaveCommit inside an outer transaction.
+     */
+    public function testFindOrCreateDefersAfterSaveCommitInOuterTransaction(): void
+    {
+        $articles = $this->getTableLocator()->get('Articles');
+        $calledAfterCommit = false;
+        $articles->getEventManager()->on('Model.afterSaveCommit', function () use (&$calledAfterCommit): void {
+            $calledAfterCommit = true;
+        });
+
+        $this->connection->begin();
+        $article = $articles->findOrCreate(
+            ['title' => 'Find Something New For Outer Txn'],
+            function ($article): void {
+                $article->title = 'Deferred Success';
+            },
+        );
+        $this->assertFalse($calledAfterCommit, 'afterSaveCommit must not fire while outer transaction is open');
+
+        $this->connection->commit();
+        $this->assertTrue($calledAfterCommit, 'afterSaveCommit should fire after outer transaction commits');
+        $this->assertSame('Deferred Success', $article->title);
+    }
+
+    /**
      * Test that findOrCreate executes callable without transaction.
      */
     public function testFindOrCreateNoTransaction(): void
