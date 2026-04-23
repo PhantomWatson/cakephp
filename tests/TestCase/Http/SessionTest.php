@@ -22,6 +22,7 @@ use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use ReflectionMethod;
 use ReflectionProperty;
 use TestApp\Http\Session\TestAppLibSession;
 use TestApp\Http\Session\TestWebSession;
@@ -697,7 +698,7 @@ class SessionTest extends TestCase
         $_SESSION = null;
 
         ini_set('session.cookie_samesite', '');
-        $method = new \ReflectionMethod(Session::class, '_defaultConfig');
+        $method = new ReflectionMethod(Session::class, '_defaultConfig');
 
         $phpConfig = $method->invoke(null, 'php');
         $this->assertSame('Lax', $phpConfig['ini']['session.cookie_samesite']);
@@ -716,7 +717,7 @@ class SessionTest extends TestCase
         $_SESSION = null;
 
         ini_set('session.cookie_samesite', 'Strict');
-        $method = new \ReflectionMethod(Session::class, '_defaultConfig');
+        $method = new ReflectionMethod(Session::class, '_defaultConfig');
         $config = $method->invoke(null, 'cake');
         $this->assertArrayNotHasKey('session.cookie_samesite', $config['ini']);
     }
