@@ -16,8 +16,11 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Console;
 
+use Cake\Command\SchemacacheBuildCommand;
+use Cake\Command\SchemacacheClearCommand;
 use Cake\Command\VersionCommand;
 use Cake\Console\Arguments;
+use Cake\Console\Command\HelpCommand;
 use Cake\Console\CommandCollection;
 use Cake\Console\CommandFactoryInterface;
 use Cake\Console\CommandInterface;
@@ -141,6 +144,28 @@ class CommandRunnerTest extends TestCase
         $this->assertStringContainsString('<info>cache:</info>', $messages);
         $this->assertStringContainsString('cache clear', $messages);
         $this->assertStringContainsString('cache list', $messages);
+    }
+
+    /**
+     * Test that running an invalid subcommand shows help listing commands
+     * that start with the given prefix.
+     */
+    public function testRunInvalidSubcommandShowsPrefixHelp(): void
+    {
+        $output = new StubConsoleOutput();
+        $app = $this->makeAppWithCommands([
+            'help' => HelpCommand::class,
+            'schema_cache build' => SchemacacheBuildCommand::class,
+            'schema_cache clear' => SchemacacheClearCommand::class,
+        ]);
+        $runner = new CommandRunner($app);
+        $result = $runner->run(['cake', 'schema_cache', 'invalid'], $this->getMockIo($output));
+
+        $this->assertSame(0, $result);
+        $messages = implode("\n", $output->messages());
+        $this->assertStringContainsString('<info>schema_cache:</info>', $messages);
+        $this->assertStringContainsString('schema_cache build', $messages);
+        $this->assertStringContainsString('schema_cache clear', $messages);
     }
 
     /**
